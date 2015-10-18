@@ -79,7 +79,6 @@ perm.disp <-adonis(ona.over~ona.env$treat, data=ona.env ,permutations=1000)
 ###################################################################################################
 
 ona.under <- read.csv("C:/Users/Mike/Desktop/Dissertation/chapter3/chapter3_analysis_update_1_15/csv/understory/ona.under.spec.stand.csv",head=TRUE,row.names=1)
-
 # pca
 
 ona.under.pca <- rda(ona.under,scale=TRUE)
