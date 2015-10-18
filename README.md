@@ -1,3 +1,3 @@
 # dissertation
 
-Some raw code used in dissertatio work, requires clean up
+Some raw code used in dissertation work, requires clean up
