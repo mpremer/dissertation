@@ -1,0 +1,27 @@
+require(dplyr)
+require(nlme)
+require(ggplot2)
+require(readxl)
+require(lattice)
+require(MASS)
+require(lattice)
+require(multcomp)
+require(phia)
+
+#soil <- read_excel("C:/Users/Mike/Desktop/Dissertation/Chapter4/raw/excel/data/Soil/ctl_CN.xls",sheet="Sheet1")
+soil <- read_excel("C:/Users/Mike/Desktop/CTL_soils_percent.xls",sheet="Sheet1")
+
+soil["plot"] <- as.factor(soil$plot)
+soil["sub"] <- as.factor(soil$sub)
+
+xyplot(C~sub|stand,data=soil,cex=2)
+xyplot(N~sub|stand,data=soil,cex=2)
+
+stand9574 <- filter(soil, stand== 9574)
+
+cmod9574 = lme(C~sub,random=~1|plot,method="REML",data=stand9574,
+               weights=varIdent(form=~1|plot))
+anova(cmod9574)
+boxplot(C~sub,data=stand9574)
+comp.sub <- glht(cmod9574, linfct=mcp(sub="Tukey"),data=stand9574)
+summary(comp.sub)
