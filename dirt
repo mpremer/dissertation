@@ -19,7 +19,7 @@ xyplot(N~sub|stand,data=soil,cex=2)
 
 stand9574 <- filter(soil, stand== 9574)
 
-cmod9574 = lme(C~sub,random=~1|plot,method="REML",data=stand9574,
+cmod9574 = lme(C~sub,random=~sub|plot,method="REML",data=stand9574,
                weights=varIdent(form=~1|plot))
 anova(cmod9574)
 boxplot(C~sub,data=stand9574)
