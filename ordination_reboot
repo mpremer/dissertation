@@ -1,0 +1,82 @@
+# Ordination Final Script 
+# Edited 15.3.2016
+
+library(vegan)
+library(MASS)
+library(labdsv)
+library(cluster)
+
+ona.over <- read.csv("C:/Users/Mike/Desktop/Dissertation/chapter3/chapter3_updates_final/csv/over/ona.over.spec.stand.no.aspen.csv",head=TRUE,row.names=1)
+ona.over.pca <- rda(ona.over,scale=TRUE)
+bstick(ona.over.pca)
+screeplot(ona.over.pca,bstick=TRUE,type="lines")
+summary(eigenvals(ona.over.pca))
+ona.over.m <- metaMDS(ona.over,dist="bray",k=2,trymax=100,engine=c("monoMDS", "isoMDS"),
+                      autotransform=TRUE,wascores=TRUE,expand=TRUE,trace=1,previous.best=TRUE)
+
+over.spec.locs <- scores(ona.over.m$species,choices=1:2)
+write.csv(over.spec.locs,"C:/Users/Mike/Desktop/over.spec.map.csv")
+
+ona.env = read.csv("C:/Users/Mike/Desktop/Dissertation/chapter3/chapter3_updates_final/csv/env/ona.env.stand.lids.csv",head=TRUE,row.names=1)
+over.ef.fit <- envfit(ona.over.m,ona.env,perm=1000)
+
+par(mfrow=c(1,1))
+par(mar=c(4.25,4.25,4,4.25))
+plot(ona.over.m, display = "sites",type="n",ylim=c(-1,1),xlim=c(-1.5,1.5),
+     xlab=("NMDS Axis 1"),ylab=("NMDS Axis 2"))
+with(ona.env, points(ona.over.m, disp = "si", pch = as.numeric(treat),cex=1.85))
+legend(-1.45,1.5,c("Residue retention  ","Residue removal"),pch=c(2,1),lty=c(1,3),cex=1.025)
+with(ona.env,ordihull(ona.over.m,treat,lwd=2.5,lty=1,show.groups="rw"))
+with(ona.env,ordihull(ona.over.m,treat,lwd=2.5,lty=3,show.groups="chipped"))
+with(ona.env,ordiellipse(ona.over.m,treat,lwd=3,lty=1,show.groups="rw"))
+with(ona.env,ordiellipse(ona.over.m,treat,lwd=3,lty=3,show.groups="chipped"))
+
+# Species Pearson correlation scores
+cor(ona.over,method="pearson",scores(ona.over.m,dis="si"))
+efover = envfit(ona.over.m,ona.env,perm=1000,scores=TRUE)
+over.pca <- rda(ona.over~veg.diversity+age+veg.richness+veg.even+carbon.t.ha+nitrogen.t.ha+
+                  C.N+Ca+Mg+K+Leaf.litter+ddw+canopy+aspen.stock.index+aspen.ba.index+aspen.sdi+elevation+over.rich+over.shann+over.even,ona.env)
+spenvcor(over.pca)
+intersetcor(over.pca)
+scores(over.pca)
+vif.cca(over.pca)
+
+over.map <- read.csv("C:/Users/Mike/Desktop/over.spec.map.csv",head=TRUE,row.names=1)
+par(mar=c(4.25,4.25,4,4.25))
+plot(over.map$x,over.map$y,type="n",xlim=c(-2,2),ylim=c(-2,2),xlab="NMDS Axis 1",ylab="NMDS Axis 2")
+faga <- over.map[which(over.map$family=="Fagaceae"), ] # could also use the filter option from dplyr here
+ole <- over.map[which(over.map$family=="Oleaceae"), ]
+salic <- over.map[which(over.map$family=="Salicaceae"), ]
+rosa <- over.map[which(over.map$family=="Rosaceae"), ]
+pina <- over.map[which(over.map$family=="Pinaceae"), ]
+tila <- over.map[which(over.map$family=="Tilaceae"), ]
+sapin <- over.map[which(over.map$family=="Sapindaceae"), ]
+betu <- over.map[which(over.map$family=="Betulaceae"), ]
+cupr <- over.map[which(over.map$family=="Cupressaceae"),]
+points(faga$x,faga$y,pch=1,cex=2)
+points(ole$x,ole$y,pch=2,cex=2)
+points(salic$x,salic$y,pch=3,cex=2)
+points(rosa$x,rosa$y,pch=4,cex=2)
+points(pina$x,pina$y,pch=17,cex=2)
+points(tila$x,tila$y,pch=15,cex=2)
+points(sapin$x,sapin$y,pch=7,cex=2)
+points(betu$x,betu$y,pch=8,cex=2)
+points(cupr$x,cupr$y,pch=16,cex=2)
+legend(-2,-0.25,c("Betulaceae","Cupressaceae","Fagaceae","Oleaceae","Pinaceae","Rosaceae","Salicaceae","Sapindaceae","Tiliaceae"),
+       pch=c(8,16,1,2,17,4,3,7,15),cex=1)
+
+veg.even <- (envfit(ona.over.m~ona.env$veg.even)) 
+DDW <- (envfit(ona.over.m~ona.env$ddw))
+Elev <- (envfit(ona.over.m~ona.env$elevation))
+plot(veg.even,lab="Vegetative Evenness",add=TRUE,col="black",lwd=4,lty=3)
+plot(DDW,lab="Down Dead Wood",add=TRUE,col="black",lwd=4,lty=3)
+plot(Elev,lab="Elevation",add=TRUE,col="black",lwd=4,lty=3)
+
+# Multiple response permutation procdure to test treatment type effect on community structure # 
+
+ona.over.mrpp <- mrpp(ona.over,ona.env$treat,permutations=1000,dist="bray")
+ona.over.mrpp
+
+# Permutational ANOVA to test for differences in variance of species proportional representation according to treatment
+perm.disp <-adonis(ona.over~ona.env$treat, data=ona.env ,permutations=1000)
+perm.anova.over <- adonis(ona.over~treat, data=ona.env, permutations=999)
