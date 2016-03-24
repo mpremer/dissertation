@@ -47,6 +47,7 @@ points(nd$age,ctl1htfit,type="l",lwd=3,lty=1)
 htmod3 <- lm(mean.ht~age+0,data=ctlsubsum3)
 summary(htmod3)
 
+ctl.models <- groupedData(log.height~age|stand,data=ctl.models)
 nullhtmod <- lme(log.height~age-1,random=~1|Stand/Plot,na.action="na.omit",method="REML",
                  weights=varIdent(form=~1|Stand),data=ctl.models)
 fullhtmod1 <- lme(log.height~age*Subplot-1,random=~1|Stand/Plot,na.action="na.omit",method="REML",
