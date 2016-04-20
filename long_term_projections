@@ -1,0 +1,138 @@
+dev.off
+rm(list=ls())
+
+title: "Long_Term_CTL"
+output: html_document
+---
+  ```{r, echo=FALSE}
+
+library(nlme)
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(knitr)
+
+ctl.models <- read.csv("C:/Users/Mike/Desktop/Dissertation/Chapter4/raw/csv/final/ctl_above_models.csv",head=TRUE)
+names(ctl.models)
+ctl.models["log.mass"] <- log(ctl.models$ddw.mass)
+ctl.models$log.mass[ctl.models$log.mass=="-Inf"] <- 0.25
+ctl.models["ddw.vol.acres"] <- (ctl.models$ddw.vol*14.2913)/4
+ctl.models["ddw.mass.acres"] <- (ctl.models$ddw.mass*0.44609)/4
+ctlsub1 <- filter(ctl.models, sub=="1")
+ctlsub2 <- filter(ctl.models, sub=="2")
+ctlsub3 <- filter(ctl.models, sub=="3")
+nd1 <- jitter(ctlsub1$age,factor=0.25,amount=0.25)
+nd2 <- jitter(ctlsub2$age,factor=0.25,amount=0.25)
+nd3 <- jitter(ctlsub3$age,factor=0.25,amount=0.25)
+
+par(mfrow=c(1,2))
+plot(nd1,ctlsub1$ddw.mass.acres,cex=2,pch=19,col="gray30",ylim=c(0,25),xlim=c(0,40),
+     xlab="Stand age (years)",ylab=expression(paste("Residue Mass (tons"," ac"^"-1",")")))
+points(nd2,ctlsub2$ddw.mass.acres,col="gray50",cex=2,pch=19)
+points(nd3,ctlsub3$ddw.mass.acres,col="gray70",cex=2,pch=19)
+nd <- data.frame(age=seq(0.1,15,0.1))
+mass1mod <- lm(log.mass~age,data=ctlsub1)
+summary(mass1mod)
+ctl1massfit <- 2.32076-0.09081*nd$age
+anti1mass <- exp(ctl1massfit)
+points(nd$age,anti1mass,type="l",lty=1,lwd=3)
+mass2mod <- lm(log.mass~age,data=ctlsub2)
+summary(mass2mod)
+ctl2massfit <- 2.02894-0.09081*nd$age
+anti2massfit <- exp(ctl2massfit)
+points(nd$age,anti2massfit,type="l",lty=3,lwd=3)
+mass3mod <- lm(log.mass~age,data=ctlsub3)
+summary(mass3mod)
+ctl3massfit <- 1.74509-0.09081*nd$age
+anti3massfit <- exp(ctl3massfit)
+points(nd$age,anti3massfit,type="l",lty=5,lwd=3)
+long.term <- read.csv("C:/Users/Mike/Desktop/Dissertation/chapter2/carbon/meta_C/raw/csv/carbon_META.csv",header=TRUE)
+long.term <- filter(long.term, treat=="chipped")
+long.term["ddw.mass.acres"] <- ((long.term$DDW.carbon)*0.44609)
+long.term["ddw.acres"] <- (long.term$DDW.carbon/0.48)*0.44609
+long.term["log.ddw.acres"] <- log(long.term$ddw.acres)
+points(long.term$age,long.term$ddw.mass.acres,ylim=c(0,40),cex=2,col="gray60")
+nd <- data.frame(age=seq(0.1,15,0.1))
+mass1mod <- lm(log.mass~age,data=ctlsub1)
+summary(mass1mod)
+ctl1massfit <- 2.32076-0.09081*nd$age
+anti1mass <- exp(ctl1massfit)
+points(nd$age,anti1mass,type="l",lty=1,lwd=3)
+mass2mod <- lm(log.mass~age,data=ctlsub2)
+summary(mass2mod)
+ctl2massfit <- 2.02894-0.09081*nd$age
+anti2massfit <- exp(ctl2massfit)
+points(nd$age,anti2massfit,type="l",lty=3,lwd=3)
+mass3mod <- lm(log.mass~age,data=ctlsub3)
+summary(mass3mod)
+ctl3massfit <- 1.74509-0.09081*nd$age
+anti3massfit <- exp(ctl3massfit)
+points(nd$age,anti3massfit,type="l",lty=5,lwd=3)
+ddwmassmod <- nls(ddw.mass.acres~a+(b*age)+(c*age^2)+(d*age^3),trace=T,
+                  start=list(d=-0.0003604604,c=0.0236360040,b=-0.4300468853,a=3.92301),data=long.term)
+ndmass = data.frame(age=seq(0.1,40,0.1))
+massfit = predict(ddwmassmod,ndmass)
+points(ndmass$age,massfit,type="l",lty=1,lwd=4,col="gray40")
+legend(24,25.75,c("CTL center  ","CTL 8.37 ft  ","CTL 21.49 ft  ", "WTS"),
+       lty=c(1,3,5,1),col=c("black","black","black","gray65"),lwd=c(3,3,3,3),cex=0.9)
+text(0.5,23.8,labels=expression("(a)") ,pos=4,cex=1.5)
+
+folderPath <- "C:/Users/Mike/Desktop/Dissertation/Chapter4/raw/csv/ctl_WTH"
+harvest <- read_excel(paste0(folderPath, "/WTH_CTL_REGEN.xls"),sheet="WTH_CTL_REGEN")
+harvest["ht.ft"] <- harvest$height*3.28
+harvest["lundgren"] <- harvest$ht.ft*(1.480^-1)*(1-exp(-0.02140*harvest$age))^-0.9377
+
+ctl <- filter(harvest, treat=="ctl")
+wth <- filter(harvest, treat=="wth")
+wth <- wth %>%
+  group_by(Stand,Plot,age,soil,treat)%>%
+  summarize(stock=mean(stock),
+            height=mean(height))
+wth["Subplot"] <- 1
+harvest <- rbind(ctl,wth)
+fullmod <- lme(height~age*treat,random=~1|Stand/Plot,na.action="na.omit",method="REML",data=harvest)
+anova(fullmod)
+wthsub1 <- rbind(wth,sub1)
+wthsub2 <- rbind(wth,sub2)
+wthsub3 <- rbind(wth,sub3)
+sub1 <- filter(ctl, Subplot=="1.000000")
+sub2 <- filter(ctl, Subplot=="2.000000")
+sub3 <- filter(ctl, Subplot=="3.000000")
+
+chipped <- read_excel("C:/Users/Mike/Desktop/Chipped.xls",sheet="Sheet1")
+earlychip <- filter(chipped, age < "15")
+sub1 <- sub1[,-10]
+early1comp <- rbind(earlychip,sub1)
+earlymod1 <- lme(ht.ft~age*treat,random=~1|Stand/Plot,na.action="na.omit",method="REML",data=early1comp)
+anova(earlymod1) # treatment WTH different than CTL 1 p; = 0.0195
+sub3 <- sub3[,-10]
+early3comp <- rbind(earlychip,sub3)
+earlymod3 <- lme(ht.ft~age*treat,random=~1|Stand/Plot,na.action="na.omit",method="REML",data=early3comp)
+anova(earlymod3) # no difference between WTH and CTL 2/3 p; = 0.2861
+
+nd <- data.frame(age=seq(0.1,12,0.1))
+plot(chipped$age,chipped$ht.ft,xlim=c(0,40),ylab="Height (ft)",
+     xlab="Stand age (years)",cex=2,col="gray50",ylim=c(0,80))
+nd1 <- jitter(sub1$age,factor=0.25,amount=0.25)
+nd2 <- jitter(sub2$age,factor=0.25,amount=0.25)
+nd3 <- jitter(sub3$age,factor=0.25,amount=0.25)
+points(nd1,sub1$ht.ft,col="gray30",cex=2,pch=19)
+points(nd2,sub2$ht.ft,col="gray50",cex=2,pch=19)
+points(nd3,sub3$ht.ft,col="gray70",cex=2,pch=19)
+ctlsub1fit <- 0+0.9915988*nd$age
+points(nd$age,ctlsub1fit,type="l",col="black",lwd=3,lty=1)
+CTL3mod <- 0+1.4793*nd$age
+#points(nd$age,CTL3mod,type="l",lwd=3,lty=4)
+aspen_height = nls(ht.ft~age/(a+b*age) ,trace=T,
+                     start=list(b=0.004305118,a=0.425205430),data=chipped)
+heightnd = data.frame(age=seq(0.1,40,0.1))
+heightmodearly <- predict(aspen_height,nd)
+points(nd$age,heightmodearly,type="l",lty=1,lwd=3,col="gray30")
+heightmodlate <- predict(aspen_height,heightnd)
+points(heightnd$age,heightmodlate,type="l",lty=1,lwd=3,col="gray30")
+new4age <- data.frame(age=seq(12.5,40,0.1))
+lundgren.adjust.mod <- 40*(1.25-1.24*(exp(-0.02274*new4age$age)))
+points(new4age$age,lundgren.adjust.mod,type="l",lwd=3,lty=3,col="black")
+legend(2,81,c("CTL center  ","WTS / CTL 8.37 ft / 21.49 ft "),
+       lty=c(6,1),col=c("black","gray30"),lwd=c(3,3),cex=0.9)
+text(35,75,labels=expression("(b)") ,pos=4,cex=1.5)
