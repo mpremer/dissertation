@@ -70,4 +70,3 @@ x <- c(AIC(fullhtmod3), AIC(fullhtmod4), AIC(fullhtmod2))
 delta <- x-min(x)
 L <- exp(-0.5*delta)
 w <- L/sum(L)
-w
