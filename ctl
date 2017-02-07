@@ -41,12 +41,6 @@ points(nd$age,CTL1mod,type="l",lwd=3,lty=1)
 legend(0,10,c("CTL center","CTL 3.3 ft / CTL 16.4 ft  "),lty=c(1,4),col=c("black","black"),lwd=c(3,3),cex=1.25)
 text(9.25,9.5,labels=expression("(a)") ,pos=4,cex=2.5)
 
-htmod1 <- lm(mean.ht~age+0,data=ctlsubsum1)
-summary(htmod1)
-points(nd$age,ctl1htfit,type="l",lwd=3,lty=1)
-htmod3 <- lm(mean.ht~age+0,data=ctlsubsum3)
-summary(htmod3)
-
 ctl.models <- groupedData(log.height~age|stand,data=ctl.models)
 nullhtmod <- lme(log.height~age-1,random=~1|Stand/Plot,na.action="na.omit",method="REML",
                  weights=varIdent(form=~1|Stand),data=ctl.models)
